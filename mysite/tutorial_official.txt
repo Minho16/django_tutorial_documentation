@@ -1,0 +1,168 @@
+Tutorial Part - 1
+
+
+1. Install Django 
+
+2. Create the project named "mysite"
+..> django-admin startproject mysite
+    ** don't care about unapplied migrations (related to the database) ** 
+
+
+3. Runserver
+..> python manage.py runserver
+    ** by default, it starts the dev. server on the internal IP at port 8000 ** 
+..> python manage.py runserver 8080 (if we want to change the port)
+
+4. Create the Polls App
+..> python manage.py startapp polls (same directory where manage.py is => mysite and polls will be at the same level)
+
+Projects vs. apps
+
+What’s the difference between a project and an app? An app is a web application that does something 
+    – e.g., a blog system, a database of public records or a small poll app. 
+A project is a collection of configuration and apps for a particular website. 
+A project can contain multiple apps. An app can be in multiple projects.
+
+5. Write the first view (polls/views.py)
+
+
+6. URL Configuration to map the view to a URL -> To call the view (create polls/urls.py)
+
+7. Point the root URL at the polls.urls (mysite/urls.py)
+
+The next step is to point the root URLconf at the polls.urls module. In mysite/urls.py, 
+add an import for django.urls.include and insert an include() in the urlpatterns list.
+
+***************************************************************************************************************
+
+Tutorial Part - 2
+
+
+1. Setup the database (mysite/settings.py)
+** For this particular tutorial, MySQL is used iso SQLite(default)
+
+    A. DATABASE info input inside settings.py
+    B. ..> python manage.py migrate 
+    ** (The migrate command looks at the INSTALLED_APPS setting and 
+        creates any necessary database tables according to the database settings in your 
+        mysite/settings.py file and the database migrations shipped with the app) **
+
+2. Creating and Activating models 
+    A. Add Questions and Choices (classes) inside polls/models.py
+    ** Once these information is input: 
+    Django is able to create a DB for this app and create API for Questions and Choices **
+    ** Before that, we need to tell our project that polls app is installed 
+
+    B. Include app in our project (mysite/settings.py => INSTALLED_APPS => add 'polls.apps.PollsConfig')
+    ** apps => polls/apps.py (app configuration)
+
+    C. Make migrations with the created models of polls (Questions and Choices)
+    ..> python manage.py makemigrations polls
+    ** makemigrations => "some changes are made to the models (in this case, new ones are made) 
+    and that the changes to be stored as a migration." **
+
+
+    BASIC GUIDE to making model changes 
+        => Change your models (in models.py).
+        => Run python manage.py makemigrations to create migrations for those changes
+        => Run python manage.py migrate to apply those changes to the database.
+
+    D. Check how SQL migrate will work in my SQL DB
+    ..> python manage.py sqlmigrate polls 0001
+
+    ** The sqlmigrate command doesn’t actually run the migration on your database - instead, 
+    it prints it to the screen so that you can see what SQL Django thinks is required. 
+    It’s useful for checking what Django is going to do or if you have database administrators 
+    who require SQL scripts for changes. ** 
+
+    Example: when we run the code above, the following SQL commands will be shown
+        --
+
+        CREATE TABLE `polls_question` (
+            `id` bigint AUTO_INCREMENT NOT NULL PRIMARY KEY, 
+            `question_text` varchar(200) NOT NULL, 
+            `pub_date` datetime(6) NOT NULL);
+        --
+        CREATE TABLE `polls_choice` (
+            `id` bigint AUTO_INCREMENT NOT NULL PRIMARY KEY, 
+            `choice_text` varchar(200) NOT NULL, 
+            `votes` integer NOT NULL, 
+            `question_id` bigint NOT NULL);
+
+        ALTER TABLE `polls_choice` 
+            ADD CONSTRAINT `polls_choice_question_id_c5b4b260_fk_polls_question_id` 
+            FOREIGN KEY (`question_id`) 
+            REFERENCES `polls_question` (`id`);
+
+    ..> python manage.py check (checks if there is any problem w/o making migrations or touching the DB)
+
+    ..> python manage.py migrate (It will apply polls 0001_initial) 
+        => polls_question and polls_choice tables are made inside DB
+
+    ** TIP ** 
+    objects.get(pub_date__year = xxx) => double underscores (__) means condition
+    Use double underscores to separate relationships.
+
+        Example: 
+        
+        Question.objects.get(pub_date__year=current_year)
+        Choice.objects.filter(question__pub_date__year=current_year)    
+
+3. quick intro about automatically-generated admin site
+
+    A. Create superuser
+
+        python manage.py createsuperuser 
+        
+        Example: 
+            Username: admin   
+            Password: 1234
+
+    B. Tell the admin that Question objects have an admin interface (polls/admin.py)
+    
+        import Question from models and add it in admin.site.register
+
+
+***************************************************************************************************************
+
+Tutorial part 3 - Create public interface - views
+
+    A. add more views in polls/views.py
+
+    B. add the path calls in polls/urls.py
+
+    C. Templates setting:
+        -> create templates file 
+        -> create one more folder named 'polls' same as the app name
+        -> html file inside the created file
+        -> modify polls/views.py adding the template & the index => link the frontend with backend
+            with the keyword: 'latest_question_list'
+    
+    D. Render() -> no need to import loader and HttpResponse in views.py 
+    (written in comment the previous example)
+
+    E. Raising a 404 error: try, except, return.... => shortcut named as get_object_or_404 in views.py
+    
+    F. Use the template system and removing hardcoded URLs in templates
+        As Is: <li><a href="/polls/{{ question.id }}/">{{ question.question_text }}</a></li>
+        To Be: <li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a></li>
+        ** Since the name argument is defined in the path() functions in the polls.urls module, 
+        a reliance on specific URL paths defined in your url configurations can be removed 
+        by using the {% url %} template tag: **
+            ex: for the case above: % url 'detail' question.id will be /polls/1 with the view name = 'detail in urls.py
+    
+
+    G. Namespacing URL names (in case of there are multiple apps within the same project)
+        -> give the app_name in urls.py
+        -> use the created names in the html files (i.e: polls:detail)
+
+***************************************************************************************************************
+
+
+Tutorial part 4 - Form processing and cutting down the code
+
+    A. Write a minimal Form
+
+    B. Use generic views: Less code is better
+
+    
